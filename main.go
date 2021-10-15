@@ -62,6 +62,8 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", false, "Enable verbose mode")
 	flag.BoolVar(&options.showVersion, "version", false, "Show version and exit")
 
+	flag.IntVar(&options.avgLatency, "avg-latency", -1, "Average response latency for reasonable response time (ms)")
+
 	flag.Parse()
 
 	fmt.Printf("stripe-mock %s\n", version)
@@ -90,7 +92,7 @@ func main() {
 		abort(err.Error())
 	}
 
-	stub, err := server.NewStubServer(fixtures, stripeSpec, options.strictVersionCheck, verbose)
+	stub, err := server.NewStubServer(fixtures, stripeSpec, options.strictVersionCheck, verbose, server.SetAvgLatency(options.avgLatency))
 	if err != nil {
 		abort(fmt.Sprintf("Error initializing router: %v\n", err))
 	}
@@ -196,6 +198,8 @@ type options struct {
 	specPath           string
 	strictVersionCheck bool
 	unixSocket         string
+
+	avgLatency int // For reasonable response times - in milliseconds
 }
 
 func (o *options) checkConflictingOptions() error {

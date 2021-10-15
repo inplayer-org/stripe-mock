@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/lestrrat-go/jsval"
+
 	"github.com/stripe/stripe-mock/param"
 	"github.com/stripe/stripe-mock/param/coercer"
 	"github.com/stripe/stripe-mock/spec"
@@ -206,18 +207,37 @@ type StubServer struct {
 	fixtures           *spec.Fixtures
 	routes             map[spec.HTTPVerb][]stubServerRoute
 	spec               *spec.Spec
+	avgLatency         int
+	delayResponses     bool
 	strictVersionCheck bool
 	verbose            bool
 }
 
+type StubServerOption func(s *StubServer)
+
+func SetAvgLatency(avgLatency int) StubServerOption {
+	return func(s *StubServer) {
+		if avgLatency <= 0 {
+			return
+		}
+		s.delayResponses = true
+		s.avgLatency = avgLatency
+	}
+}
+
 // NewStubServer creates a new instance of StubServer
-func NewStubServer(fixtures *spec.Fixtures, spec *spec.Spec, strictVersionCheck, verbose bool) (*StubServer, error) {
+func NewStubServer(fixtures *spec.Fixtures, spec *spec.Spec, strictVersionCheck, verbose bool, opts ...StubServerOption) (*StubServer, error) {
 	s := StubServer{
 		fixtures:           fixtures,
 		spec:               spec,
 		strictVersionCheck: strictVersionCheck,
 		verbose:            verbose,
 	}
+
+	for _, option := range opts {
+		option(&s)
+	}
+
 	err := s.initializeRouter()
 	if err != nil {
 		return nil, err
@@ -229,6 +249,8 @@ func NewStubServer(fixtures *spec.Fixtures, spec *spec.Spec, strictVersionCheck,
 func (s *StubServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	fmt.Printf("Request: %v %v\n", r.Method, r.URL.Path)
+
+	fmt.Printf("Average latency: %dms\n", s.avgLatency)
 
 	//
 	// Validate headers
