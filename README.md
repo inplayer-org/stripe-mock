@@ -38,7 +38,7 @@ Limitations:
   is currently not supported. It will return a success response instead of
   the desired error response.
 
-## Future plans
+## Future plans 
 
 The next important feature that we're aiming to provide is statefulness. The
 idea would be that resources created during a session would be stored for that
