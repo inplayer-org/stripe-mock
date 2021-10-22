@@ -904,6 +904,7 @@ func writeResponse(w http.ResponseWriter, r *http.Request, start time.Time, stat
 		encodedData = append(encodedData, '\n')
 	}
 
+	encodedData = rewriteResponse(encodedData, r)
 	if err != nil {
 		fmt.Printf("Error serializing response: %v\n", err)
 		writeResponse(w, r, start, http.StatusInternalServerError, nil)
@@ -918,6 +919,32 @@ func writeResponse(w http.ResponseWriter, r *http.Request, start time.Time, stat
 		fmt.Printf("Error writing to client: %v\n", err)
 	}
 	fmt.Printf("Response: elapsed=%v status=%v\n", time.Now().Sub(start), status)
+}
+
+type InplayerResponse interface {
+	PostPaymentIntents() []byte
+}
+
+type InplayerResponseEvent struct {
+	send InplayerResponse
+}
+
+func NewInplayerResponseEvent(inplayerResponse InplayerResponse) *InplayerResponseEvent {
+	return &InplayerResponseEvent{
+		send: inplayerResponse,
+	}
+}
+
+func rewriteResponse(encodedData []byte, r *http.Request) []byte {
+
+	inplayerResponse := NewInplayerResponseEvent(*new(InplayerResponseMethods))
+
+	if r.URL.Path == "/v1/payment_intents" {
+		return inplayerResponse.send.PostPaymentIntents()
+	}
+
+	return encodedData
+
 }
 
 // isJSONFile judges based on a file's extension whether it's a JSON file. It's
