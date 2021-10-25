@@ -2,9 +2,7 @@ package server
 
 import "fmt"
 
-type InplayerResponseMethods struct{}
-
-func (i InplayerResponseMethods) PostPaymentIntents() []byte {
+func PostPaymentIntents() []byte {
 	return []byte(fmt.Sprintf(`{
 		"id": "pi_3JmzufH4sM2j3OdT05U65vh7",
 		"object": "payment_intent",

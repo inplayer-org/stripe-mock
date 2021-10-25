@@ -921,26 +921,10 @@ func writeResponse(w http.ResponseWriter, r *http.Request, start time.Time, stat
 	fmt.Printf("Response: elapsed=%v status=%v\n", time.Now().Sub(start), status)
 }
 
-type InplayerResponse interface {
-	PostPaymentIntents() []byte
-}
-
-type InplayerResponseEvent struct {
-	send InplayerResponse
-}
-
-func NewInplayerResponseEvent(inplayerResponse InplayerResponse) *InplayerResponseEvent {
-	return &InplayerResponseEvent{
-		send: inplayerResponse,
-	}
-}
-
 func rewriteResponse(encodedData []byte, r *http.Request) []byte {
 
-	inplayerResponse := NewInplayerResponseEvent(*new(InplayerResponseMethods))
-
 	if r.URL.Path == "/v1/payment_intents" {
-		return inplayerResponse.send.PostPaymentIntents()
+		return PostPaymentIntents()
 	}
 
 	return encodedData
