@@ -7,10 +7,12 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/stripe/stripe-mock/server"
 )
@@ -63,8 +65,10 @@ func main() {
 	flag.BoolVar(&options.showVersion, "version", false, "Show version and exit")
 
 	flag.IntVar(&options.avgLatency, "avg-latency", -1, "Average response latency for reasonable response time (ms)")
+	flag.Float64Var(&options.stdv, "stdv", 0.5, "Standard deviation for latency, must be in range (0, 1)")
 
 	flag.Parse()
+	rand.Seed(time.Now().UnixNano())
 
 	fmt.Printf("stripe-mock %s\n", version)
 	if options.showVersion || len(flag.Args()) == 1 && flag.Arg(0) == "version" {
@@ -92,7 +96,14 @@ func main() {
 		abort(err.Error())
 	}
 
-	stub, err := server.NewStubServer(fixtures, stripeSpec, options.strictVersionCheck, verbose, server.SetAvgLatency(options.avgLatency))
+	stub, err := server.NewStubServer(
+		fixtures,
+		stripeSpec,
+		options.strictVersionCheck,
+		verbose,
+		server.SetAvgLatency(options.avgLatency),
+		server.SetStdv(options.stdv),
+	)
 	if err != nil {
 		abort(fmt.Sprintf("Error initializing router: %v\n", err))
 	}
@@ -168,6 +179,8 @@ func main() {
 		}()
 	}
 
+	fmt.Printf("Average latency: %dms, STDV: %f\n", options.avgLatency, options.stdv)
+
 	// Block forever. The serve Goroutines above will abort the program if
 	// either of them fails.
 	select {}
@@ -199,7 +212,8 @@ type options struct {
 	strictVersionCheck bool
 	unixSocket         string
 
-	avgLatency int // For reasonable response times - in milliseconds
+	avgLatency int     // For reasonable response times - in milliseconds
+	stdv       float64 // For reasonable response times - standard deviation in rage (0, 1)
 }
 
 func (o *options) checkConflictingOptions() error {
