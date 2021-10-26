@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/lestrrat-go/jsval"
+
 	"github.com/stripe/stripe-mock/param"
 	"github.com/stripe/stripe-mock/param/coercer"
 	"github.com/stripe/stripe-mock/spec"
@@ -206,18 +208,44 @@ type StubServer struct {
 	fixtures           *spec.Fixtures
 	routes             map[spec.HTTPVerb][]stubServerRoute
 	spec               *spec.Spec
+	stdv               float64
+	avgLatency         int
+	delayResponses     bool
 	strictVersionCheck bool
 	verbose            bool
 }
 
+type StubServerOption func(s *StubServer)
+
+func SetAvgLatency(avgLatency int) StubServerOption {
+	return func(s *StubServer) {
+		if avgLatency <= 0 {
+			return
+		}
+		s.delayResponses = true
+		s.avgLatency = avgLatency
+	}
+}
+
+func SetStdv(stdv float64) StubServerOption {
+	return func(s *StubServer) {
+		s.stdv = stdv
+	}
+}
+
 // NewStubServer creates a new instance of StubServer
-func NewStubServer(fixtures *spec.Fixtures, spec *spec.Spec, strictVersionCheck, verbose bool) (*StubServer, error) {
+func NewStubServer(fixtures *spec.Fixtures, spec *spec.Spec, strictVersionCheck, verbose bool, opts ...StubServerOption) (*StubServer, error) {
 	s := StubServer{
 		fixtures:           fixtures,
 		spec:               spec,
 		strictVersionCheck: strictVersionCheck,
 		verbose:            verbose,
 	}
+
+	for _, option := range opts {
+		option(&s)
+	}
+
 	err := s.initializeRouter()
 	if err != nil {
 		return nil, err
@@ -225,10 +253,26 @@ func NewStubServer(fixtures *spec.Fixtures, spec *spec.Spec, strictVersionCheck,
 	return &s, nil
 }
 
+func (s *StubServer) delay() {
+	lat := float64(s.avgLatency/1000) + s.stdv*rand.NormFloat64()
+	if lat < 0 {
+		lat = - lat
+	}
+
+	fmt.Printf("Request latency = %f", lat*1000)
+	time.Sleep(time.Duration(lat*1000) * time.Millisecond)
+}
+
 // HandleRequest handes an HTTP request directed at the API stub.
 func (s *StubServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	fmt.Printf("Request: %v %v\n", r.Method, r.URL.Path)
+
+	//
+	// Delaying the response according to acg-latency and stdv
+	//
+
+	s.delay()
 
 	//
 	// Validate headers
