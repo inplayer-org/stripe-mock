@@ -22,7 +22,4 @@ jobs:
           go install github.com/go-bindata/go-bindata/...@latest &&
           go install honnef.co/go/tools/cmd/staticcheck@latest &&
           go generate &&
-          make build &&
-          make lint &&
-          make test &&
-          make vet
+          make
