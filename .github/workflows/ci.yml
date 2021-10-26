@@ -23,6 +23,6 @@ jobs:
           go install honnef.co/go/tools/cmd/staticcheck@latest &&
           go generate &&
           make build &&
-          make link &&
+          make lint &&
           make test &&
           make vet
