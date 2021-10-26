@@ -6,9 +6,6 @@ all: test vet lint check-gofmt build
 build:
 	go build -mod=vendor -o stripe-mock
 
-check-gofmt:
-	scripts/check_gofmt.sh
-
 lint:
 	staticcheck
 
