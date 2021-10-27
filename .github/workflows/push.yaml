@@ -17,9 +17,9 @@ jobs:
           # list of Docker images to use as base name for tags
           images: |
             ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/stripe-mock
-            # generate Docker tags based on the following events/attributes
-            tags: |
-              type=pep440,pattern={{version}}
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=pep440,pattern={{version}}
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
