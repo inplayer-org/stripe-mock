@@ -272,7 +272,9 @@ func (s *StubServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	// Delaying the response according to acg-latency and stdv
 	//
 
-	s.delay()
+	if s.delayResponses {
+		s.delay()
+	}
 
 	//
 	// Validate headers
